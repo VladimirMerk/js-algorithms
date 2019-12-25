@@ -1,0 +1,15 @@
+{
+  "name": "is-prime",
+  "version": "1.0.0",
+  "description": "Prime Number Algorithm",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VladimirMerk/js-algorithms.git"
+  },
+  "main": "./src/index.js",
+  "scripts": {
+    "test": "npx mocha test"
+  },
+  "author": "VMerk",
+  "license": "ISC"
+}
