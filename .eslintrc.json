@@ -8,7 +8,7 @@
     "extends": [
         "airbnb-base"
     ],
-    "plugins": ["jest"],
+    "plugins": ["jest", "mocha"],
     "globals": {
         "Atomics": "readonly",
         "SharedArrayBuffer": "readonly"

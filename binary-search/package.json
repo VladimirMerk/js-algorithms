@@ -1,8 +1,8 @@
 {
-  "name": "is-prime",
+  "name": "binary-search",
   "version": "1.0.0",
-  "description": "Prime Number Algorithm",
-  "homepage": "https://github.com/VladimirMerk/js-algorithms/tree/master/is-prime",
+  "description": "Dichotomy Algorithm",
+  "homepage": "https://github.com/VladimirMerk/js-algorithms/tree/master/binary-search",
   "main": "./src/index.js",
   "scripts": {
     "start": "node ./",

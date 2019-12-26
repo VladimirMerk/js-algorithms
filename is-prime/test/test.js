@@ -1,28 +1,68 @@
 'use strict';
 
-const assert = require('assert')
-const rgbToHex = require('../');
+const { assert, expect } = require('./../../node_modules/chai');
+const { isPrimeNumberSimple, isPrimeNumber, isPrimeNumberErastophene } = require('../');
 
-describe('#rgbToHex()', () => {
-  it('should return #FFFFFF when no parameters are passed', () => {
-    assert.equal('#FFFFFF', rgbToHex());
+const isPrimeNumbers = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47];
+const notPrimeNumbers = [-1, 0, 1, 4, 6, 8, 9, 10, 12, 14, 15, 16, 18, 20, 21];
+
+describe('isPrimeNumber', () => {
+  it('Should return true for all elements of isPrimeNumbers array', () => {
+    const result = isPrimeNumbers.map((number) => isPrimeNumber(number));
+    if (!result.includes(true)) {
+      console.log(isPrimeNumbers, result)
+    }
+    assert.equal(true, !result.includes(false));
   });
-  it('should return #FFFFFF when the parameters are undefined', () => {
-    assert.equal('#FFFFFF', rgbToHex(undefined, undefined, undefined));
+  it('Should return false for all elements of notPrimeNumbers array', () => {
+    const result = notPrimeNumbers.map((number) => isPrimeNumber(number));
+    if (result.includes(true)) {
+      console.log(notPrimeNumbers, result);
+    }
+    assert.equal(true, !result.includes(true));
   });
-  it('should return #000000 when the parameters are NaN', () => {
-    assert.equal('#000000', rgbToHex(NaN, NaN, NaN));
+  it('Should return an exception \'Argument is not a number\' in response to an argument not a number', () => {
+    expect(() => isPrimeNumber('number')).to.throw('Argument is not a number');
   });
-  it('should return #000000 when the parameters are strings', () => {
-    assert.equal('#000000', rgbToHex('s', 't', 'r'));
+});
+
+describe('isPrimeNumberSimple', () => {
+  it('Should return true for all elements of isPrimeNumbers array', () => {
+    const result = isPrimeNumbers.map((number) => isPrimeNumberSimple(number));
+    if (!result.includes(true)) {
+      console.log(isPrimeNumbers, result);
+    }
+    assert.equal(true, !result.includes(false));
   });
-  it('should return #010203 when the parameters are less than 10 and there are more than three of them', () => {
-    assert.equal('#010203', rgbToHex(1, 2, 3, 4, 5));
+  it('Should return false for all elements of notPrimeNumbers array', () => {
+    const result = notPrimeNumbers.map((number) => isPrimeNumberSimple(number));
+    if (result.includes(true)) {
+      console.log(notPrimeNumbers, result);
+    }
+    assert.equal(true, !result.includes(true));
   });
-  it('should return #0A64C8 when the parameters 10, 100 and 200', () => {
-    assert.equal('#0A64C8', rgbToHex(10, 100, 200));
+  it('Should return false for string', () => {
+    expect(() => isPrimeNumber('number')).to.throw('Argument is not a number');
   });
-  it('should return #0064FF when the parameters -100, 100 and 300 are out of range', () => {
-    assert.equal('#0064FF', rgbToHex(-100, 100, 300));
+});
+
+
+describe('isPrimeNumberErastophene', () => {
+  it('Should return true for all elements of isPrimeNumbers array', () => {
+    const result = isPrimeNumbers.map((number) => isPrimeNumberErastophene(number));
+    if (!result.includes(true)) {
+      console.log(isPrimeNumbers, result);
+    }
+    assert.equal(true, !result.includes(false));
   });
-})
+  it('Should return false for all elements of notPrimeNumbers array', () => {
+    const result = notPrimeNumbers.map((number) => isPrimeNumberErastophene(number));
+    if (result.includes(true)) {
+      console.log(notPrimeNumbers, result);
+    }
+    assert.equal(true, !result.includes(true));
+  });
+  it('Should return false for string', () => {
+    expect(() => isPrimeNumber('number')).to.throw('Argument is not a number');
+  });
+});
