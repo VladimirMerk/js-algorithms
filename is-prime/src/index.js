@@ -7,9 +7,10 @@
  * @return {Array}
  */
 function getArrayRange(start, end) {
-  const result = [...Array(end + 1).keys()];
-  result.splice(0, start);
-  return result;
+  return Array.from(
+    { length: end - start + 1 },
+    (v, k) => start + k,
+  );
 }
 
 function isPrimeNumber(n) {
