@@ -11,6 +11,7 @@
   border: 1px solid #e3e3e3;
   width: 20px;
   height: 20px;
+  position: relative;
 }
 
 .cell.wall {
@@ -28,7 +29,15 @@
 .cell.target {
   background-color: #ff0;
 }
-
+.row .cell[data-path]:after {
+    content:"";
+    width: 5px;
+    height: 5px;
+    background-color: #ff0000;
+    position: absolute;
+    left: calc(50% - 2.5px);
+    top: calc(50% - 2.5px);
+}
 .row .cell[data-deep="1"] {
   background-color: rgba(255, 255, 255);
 }
@@ -121,11 +130,18 @@
 
 const player = [1, 1]
 const target = [1, 7]
-const enemy = [8, 8]
+const enemy = [9, 9]
 let ceilElements = []
-redrawMaze();
+
+let n = 0;
+calculate(++n);
+setInterval(() => {
+    calculate(++n);
+}, 1000)
+
 
 function redrawMaze() {
+  mainGrid.innerHTML = ""
   ceilElements = []
   for (let i = 0; i < maze.length; i++) {
     const row = document.createElement('div')
@@ -165,8 +181,6 @@ function redrawMaze() {
     new Error('Player is catch!');
     return;
   }
-
-  calculate();
 }
 
 /*
@@ -186,28 +200,65 @@ function redrawMaze() {
 // https://dspace.spbu.ru/bitstream/11701/10718/1/KornienkoVladislavFinal.pdf
 
 function calculate(n = 1) {
+  if (n % 5 !== 0 && n % 10 !== 0) {
+  if (n % 5 < 5 && n % 10 < 5) {
+    enemy[0] -= 1
+    enemy[1] -= 1
+  } else if (n % 10 >= 5) {
+    enemy[0] += 1
+    enemy[1] += 1
+  }
+  }
+  redrawMaze();
   const visited = {
-    [`${player[0]}:${player[1]}`]: 0
+    [`${player[0]}:${player[1]}`]: {
+        deep: 0,
+        parent: null
+    }
   }
   const queue = expansion({x: player[0], y: player[1], deep: 0}, visited)
   for (const point of queue) {
-    visited[`${point.x}:${point.y}`] = point.parentDeep + 1;
-    queue.push(...expansion({x: point.x, y: point.y, deep: visited[`${point.x}:${point.y}`]}, visited));
+    visited[`${point.x}:${point.y}`] = {
+        deep: point.parentDeep + 1,
+        parent: point.parent
+    }
+    // console.log('point.x', point.x, target[0])
+    //console.log('point.y', point.y, target[1])
+    if (point.x === target[0] && point.y === target[1]) {
+        // console.log('Target reached!')
+        break;
+    }
+    queue.push(...expansion({x: point.x, y: point.y, deep: visited[`${point.x}:${point.y}`].deep}, visited));
   }
-  drawPath(visited);
+  for (const point of getPath(visited)) {
+    ceilElements[point.x][point.y].dataset.path = 1
+  }
+  // drawPath(Object.assign(visited));
+  
   function drawPath(vis) {
-    console.log(Object.keys(vis))
     let key = Object.keys(vis)[0];
     if (key !== undefined) {
       setTimeout(() => {
         const point = key.split(':')
-        ceilElements[point[0]][point[1]].dataset.deep = vis[key]
+        ceilElements[point[0]][point[1]].dataset.deep = vis[key].deep
         delete vis[key]
         drawPath(vis)
       }, 250)
     }
   }
 
+  function getPath(visitedPoints) {
+    let key = Object.keys(visitedPoints).reverse()[0]
+    // console.log(Object.keys(visitedPoints).reverse())
+    const result = []
+    while(key !== null) {
+        // console.log(visitedPoints[key])
+        result.push({x: key.split(":")[0], y: key.split(":")[1]})
+        key = visitedPoints[key].parent;
+    }
+    return result
+  }
+  
   function expansion(point, visitedPoints) {
     result = [];
     let newx = point.x
@@ -226,7 +277,7 @@ function calculate(n = 1) {
 
     if (maze[newx] !== undefined && maze[newx][newy] !== undefined && maze[newx][newy] === 0 && ! visitedPoints.hasOwnProperty(`${newx}:${newy}`)) {
       if (! enemyArray.includes(`${newx}:${newy}`)) {
-        result.push({x: newx, y: newy, parentDeep: point.deep})
+        result.push({x: newx, y: newy, parentDeep: point.deep, parent: `${point.x}:${point.y}`})
       }
     }
 
@@ -234,7 +285,7 @@ function calculate(n = 1) {
     newy = point.y
     if (maze[newx] !== undefined && maze[newx][newy] !== undefined && maze[newx][newy] === 0 && ! visitedPoints.hasOwnProperty(`${newx}:${newy}`)) {
       if (! enemyArray.includes(`${newx}:${newy}`)) {
-        result.push({x: newx, y: newy, parentDeep: point.deep})
+        result.push({x: newx, y: newy, parentDeep: point.deep, parent: `${point.x}:${point.y}`})
       }
     }
 
@@ -242,7 +293,7 @@ function calculate(n = 1) {
     newy = point.y + 1
     if (maze[newx] !== undefined && maze[newx][newy] !== undefined && maze[newx][newy] === 0 &&  ! visitedPoints.hasOwnProperty(`${newx}:${newy}`)) {
       if (! enemyArray.includes(`${newx}:${newy}`)) {
-        result.push({x: newx, y: newy, parentDeep: point.deep})
+        result.push({x: newx, y: newy, parentDeep: point.deep, parent: `${point.x}:${point.y}`})
       }
     }
 
@@ -250,7 +301,7 @@ function calculate(n = 1) {
     newy = point.y
     if (maze[newx] !== undefined && maze[newx][newy] !== undefined && maze[newx][newy] === 0 && ! visitedPoints.hasOwnProperty(`${newx}:${newy}`)) {
       if (! enemyArray.includes(`${newx}:${newy}`)) {
-        result.push({x: newx, y: newy, parentDeep: point.deep})
+        result.push({x: newx, y: newy, parentDeep: point.deep, parent: `${point.x}:${point.y}`})
       }
     }
 
