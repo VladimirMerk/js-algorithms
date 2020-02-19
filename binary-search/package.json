@@ -6,7 +6,7 @@
   "main": "./src/index.js",
   "scripts": {
     "start": "node ./",
-    "test": "npx jest test"
+    "test": "jest test"
   },
   "author": "VMerk",
   "license": "ISC"
