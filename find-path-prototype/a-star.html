@@ -124,16 +124,6 @@
 </div>
 
 <script type="text/javascript">
-  // const maze = [[ 2 , 2 , 2 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ],
-  //           [ 2 , 2 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ],
-  //           [ 2 , 2 , 0 , 0 , 2 , 2 , 2 , 2 , 2 , 0 ],
-  //           [ 2 , 2 , 0 , 2 , 2 , 2 , 2 , 2 , 2 , 0 ],
-  //           [ 2 , 2 , 0 , 2 , 2 , 2 , 2 , 2 , 2 , 0 ],
-  //           [ 2 , 0 , 0 , 1 , 1 , 2 , 2 , 2 , 2 , 0 ],
-  //           [ 2 , 0 , 0 , 2 , 1 , 2 , 2 , 2 , 0 , 0 ],
-  //           [ 2 , 0 , 0 , 0 , 1 , 2 , 2 , 0 , 0 , 0 ],
-  //           [ 2 , 2 , 2 , 2 , 1 , 2 , 0 , 0 , 0 , 0 ],
-  //           [ 2 , 2 , 2 , 2 , 2 , 2 , 0 , 0 , 0 , 0 ]];
   const maze = [[ 2 , 2 , 2 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ],
             [ 2 , 1 , 1 , 1 , 1 , 0 , 0 , 0 , 0 , 0 ],
             [ 2 , 2 , 0 , 0 , 1 , 2 , 2 , 2 , 2 , 0 ],
@@ -237,8 +227,11 @@ function calculate(n = 1) {
         parent: null
     }
   }
-  let queue = expansion({x: player[0], y: player[1], weight: 0, deep: 0}, visited)
-  for (const point of queue) {
+  let queue = expansion({x: player[0], y: player[1], weight: 0, deep: 0}, visited, [])
+  let counter = 0;
+  let point = queue.shift()
+  while (point) {
+    if (counter > 1000) break
     if (point.weight === undefined) debugger
     visited[`${point.x}:${point.y}`] = {
         deep: point.parentDeep + 1,
@@ -252,9 +245,13 @@ function calculate(n = 1) {
         // console.log('Target reached!')
         break;
     }
-    queue.push(...expansion({x: point.x, y: point.y, weight: visited[`${point.x}:${point.y}`].weight, deep: visited[`${point.x}:${point.y}`].deep}, visited));
+    queue.push(...expansion({x: point.x, y: point.y, weight: visited[`${point.x}:${point.y}`].weight, deep: visited[`${point.x}:${point.y}`].deep}, visited, queue));
     queue = queue.sort((a, b) => a.weight - b.weight)
+    point = queue.shift()
+
+    counter += 1;
   }
+  console.log('counter', counter)
   for (const point of getPath(visited)) {
     ceilElements[point.x][point.y].dataset.path = 1
   }
@@ -285,7 +282,7 @@ function calculate(n = 1) {
     return result
   }
 
-  function expansion(point, visitedPoints) {
+  function expansion(point, visitedPoints, queue) {
     result = [];
     let newx = point.x
     let newy = point.y - 1
@@ -302,51 +299,58 @@ function calculate(n = 1) {
      `${enemy[0]+1}:${enemy[1]+1}`
     ]
 
-    if (maze[newx] !== undefined && maze[newx][newy] !== undefined && maze[newx][newy] !== 1 && ! visitedPoints.hasOwnProperty(`${newx}:${newy}`)) {
+    if (maze[newx] !== undefined && maze[newx][newy] !== undefined && maze[newx][newy] !== 1 && ! visitedPoints.hasOwnProperty(`${newx}:${newy}`) && ! queue.some((point) => point.x === newx && point.y === newy)) {
       wg = 1 + point.weight + maze[newx][newy];
       if (enemyArray.includes(`${newx}:${newy}`)) {
         wg += 10
       }
+      wg += heuristic({x: newx, y: newy}, {x: target[0], y: target[1]})
       if (isNaN(wg)) debugger
       result.push({x: newx, y: newy, weight: wg, parentDeep: point.deep, parent: `${point.x}:${point.y}`})
     }
 
     newx = point.x - 1
     newy = point.y
-    if (maze[newx] !== undefined && maze[newx][newy] !== undefined && maze[newx][newy] !== 1 && ! visitedPoints.hasOwnProperty(`${newx}:${newy}`)) {
+    if (maze[newx] !== undefined && maze[newx][newy] !== undefined && maze[newx][newy] !== 1 && ! visitedPoints.hasOwnProperty(`${newx}:${newy}`) && ! queue.some((point) => point.x === newx && point.y === newy)) {
       wg = 1 + point.weight + maze[newx][newy];
       if (enemyArray.includes(`${newx}:${newy}`)) {
         wg += 10
       }
+      wg += heuristic({x: newx, y: newy}, {x: target[0], y: target[1]})
       if (isNaN(wg)) debugger
       result.push({x: newx, y: newy, weight: wg, parentDeep: point.deep, parent: `${point.x}:${point.y}`})
     }
 
     newx = point.x
     newy = point.y + 1
-    if (maze[newx] !== undefined && maze[newx][newy] !== undefined && maze[newx][newy] !== 1 &&  ! visitedPoints.hasOwnProperty(`${newx}:${newy}`)) {
-
+    if (maze[newx] !== undefined && maze[newx][newy] !== undefined && maze[newx][newy] !== 1 &&  ! visitedPoints.hasOwnProperty(`${newx}:${newy}`) && ! queue.some((point) => point.x === newx && point.y === newy)) {
         wg = 1 + point.weight + maze[newx][newy];
         if (enemyArray.includes(`${newx}:${newy}`)) {
           wg += 10
         }
+        wg += heuristic({x: newx, y: newy}, {x: target[0], y: target[1]})
         if (isNaN(wg)) debugger
         result.push({x: newx, y: newy, weight: wg, parentDeep: point.deep, parent: `${point.x}:${point.y}`})
     }
 
     newx = point.x + 1
     newy = point.y
-    if (maze[newx] !== undefined && maze[newx][newy] !== undefined && maze[newx][newy] !== 1 && ! visitedPoints.hasOwnProperty(`${newx}:${newy}`)) {
+    if (maze[newx] !== undefined && maze[newx][newy] !== undefined && maze[newx][newy] !== 1 && ! visitedPoints.hasOwnProperty(`${newx}:${newy}`) && ! queue.some((point) => point.x === newx && point.y === newy)) {
 
         wg = 1 + point.weight + maze[newx][newy];
         if (enemyArray.includes(`${newx}:${newy}`)) {
           wg += 10
         }
+        wg += heuristic({x: newx, y: newy}, {x: target[0], y: target[1]})
         if (isNaN(wg)) debugger
         result.push({x: newx, y: newy, weight: wg, parentDeep: point.deep, parent: `${point.x}:${point.y}`})
 
     }
     return result;
+  }
+
+  function heuristic(a, b) {
+    return Math.abs(a.x - b.x) + Math.abs(a.y - b.y)
   }
   // maze[visited.x][visited.y]
   // function expansion

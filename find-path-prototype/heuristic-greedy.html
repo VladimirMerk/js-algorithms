@@ -124,26 +124,16 @@
 </div>
 
 <script type="text/javascript">
-  // const maze = [[ 2 , 2 , 2 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ],
-  //           [ 2 , 2 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ],
-  //           [ 2 , 2 , 0 , 0 , 2 , 2 , 2 , 2 , 2 , 0 ],
-  //           [ 2 , 2 , 0 , 2 , 2 , 2 , 2 , 2 , 2 , 0 ],
-  //           [ 2 , 2 , 0 , 2 , 2 , 2 , 2 , 2 , 2 , 0 ],
-  //           [ 2 , 0 , 0 , 1 , 1 , 2 , 2 , 2 , 2 , 0 ],
-  //           [ 2 , 0 , 0 , 2 , 1 , 2 , 2 , 2 , 0 , 0 ],
-  //           [ 2 , 0 , 0 , 0 , 1 , 2 , 2 , 0 , 0 , 0 ],
-  //           [ 2 , 2 , 2 , 2 , 1 , 2 , 0 , 0 , 0 , 0 ],
-  //           [ 2 , 2 , 2 , 2 , 2 , 2 , 0 , 0 , 0 , 0 ]];
-  const maze = [[ 2 , 2 , 2 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ],
-            [ 2 , 1 , 1 , 1 , 1 , 0 , 0 , 0 , 0 , 0 ],
-            [ 2 , 2 , 0 , 0 , 1 , 2 , 2 , 2 , 2 , 0 ],
-            [ 2 , 2 , 0 , 2 , 1 , 2 , 2 , 2 , 2 , 0 ],
-            [ 2 , 2 , 0 , 2 , 1 , 2 , 2 , 2 , 2 , 0 ],
-            [ 2 , 0 , 0 , 1 , 1 , 2 , 2 , 2 , 2 , 0 ],
-            [ 2 , 0 , 0 , 2 , 1 , 2 , 2 , 2 , 0 , 0 ],
-            [ 2 , 0 , 0 , 0 , 1 , 2 , 2 , 0 , 0 , 0 ],
-            [ 2 , 1 , 1 , 1 , 1 , 2 , 0 , 0 , 0 , 0 ],
-            [ 2 , 2 , 2 , 2 , 2 , 2 , 0 , 0 , 0 , 0 ]];
+  const maze = [[ 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ],
+            [ 0 , 1 , 1 , 1 , 1 , 0 , 0 , 0 , 0 , 0 ],
+            [ 0 , 0 , 0 , 0 , 1 , 0 , 0 , 0 , 0 , 0 ],
+            [ 0 , 0 , 0 , 0 , 1 , 0 , 0 , 0 , 0 , 0 ],
+            [ 0 , 0 , 0 , 0 , 1 , 0 , 0 , 0 , 0 , 0 ],
+            [ 0 , 0 , 0 , 1 , 1 , 0 , 0 , 0 , 0 , 0 ],
+            [ 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ],
+            [ 0 , 0 , 0 , 0 , 1 , 0 , 0 , 0 , 0 , 0 ],
+            [ 0 , 1 , 1 , 1 , 1 , 0 , 0 , 0 , 0 , 0 ],
+            [ 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ]];
 
 const player = [6, 1]
 const target = [4, 9]
@@ -238,7 +228,10 @@ function calculate(n = 1) {
     }
   }
   let queue = expansion({x: player[0], y: player[1], weight: 0, deep: 0}, visited)
-  for (const point of queue) {
+  let counter = 0;
+  let point = queue.shift()
+  while (point) {
+    if (counter > 100) break
     if (point.weight === undefined) debugger
     visited[`${point.x}:${point.y}`] = {
         deep: point.parentDeep + 1,
@@ -254,6 +247,8 @@ function calculate(n = 1) {
     }
     queue.push(...expansion({x: point.x, y: point.y, weight: visited[`${point.x}:${point.y}`].weight, deep: visited[`${point.x}:${point.y}`].deep}, visited));
     queue = queue.sort((a, b) => a.weight - b.weight)
+    point = queue.shift()
+    counter += 1;
   }
   for (const point of getPath(visited)) {
     ceilElements[point.x][point.y].dataset.path = 1
@@ -303,10 +298,11 @@ function calculate(n = 1) {
     ]
 
     if (maze[newx] !== undefined && maze[newx][newy] !== undefined && maze[newx][newy] !== 1 && ! visitedPoints.hasOwnProperty(`${newx}:${newy}`)) {
-      wg = 1 + point.weight + maze[newx][newy];
-      if (enemyArray.includes(`${newx}:${newy}`)) {
-        wg += 10
-      }
+      // wg = 1 + point.weight + maze[newx][newy];
+      // if (enemyArray.includes(`${newx}:${newy}`)) {
+      //   wg += 10
+      // }
+      wg = heuristic({x: newx, y: newy}, {x: target[0], y: target[1]})
       if (isNaN(wg)) debugger
       result.push({x: newx, y: newy, weight: wg, parentDeep: point.deep, parent: `${point.x}:${point.y}`})
     }
@@ -314,10 +310,11 @@ function calculate(n = 1) {
     newx = point.x - 1
     newy = point.y
     if (maze[newx] !== undefined && maze[newx][newy] !== undefined && maze[newx][newy] !== 1 && ! visitedPoints.hasOwnProperty(`${newx}:${newy}`)) {
-      wg = 1 + point.weight + maze[newx][newy];
-      if (enemyArray.includes(`${newx}:${newy}`)) {
-        wg += 10
-      }
+      // wg = 1 + point.weight + maze[newx][newy];
+      // if (enemyArray.includes(`${newx}:${newy}`)) {
+      //   wg += 10
+      // }
+      wg = heuristic({x: newx, y: newy}, {x: target[0], y: target[1]})
       if (isNaN(wg)) debugger
       result.push({x: newx, y: newy, weight: wg, parentDeep: point.deep, parent: `${point.x}:${point.y}`})
     }
@@ -326,10 +323,11 @@ function calculate(n = 1) {
     newy = point.y + 1
     if (maze[newx] !== undefined && maze[newx][newy] !== undefined && maze[newx][newy] !== 1 &&  ! visitedPoints.hasOwnProperty(`${newx}:${newy}`)) {
 
-        wg = 1 + point.weight + maze[newx][newy];
-        if (enemyArray.includes(`${newx}:${newy}`)) {
-          wg += 10
-        }
+        // wg = 1 + point.weight + maze[newx][newy];
+        // if (enemyArray.includes(`${newx}:${newy}`)) {
+        //   wg += 10
+        // }
+        wg = heuristic({x: newx, y: newy}, {x: target[0], y: target[1]})
         if (isNaN(wg)) debugger
         result.push({x: newx, y: newy, weight: wg, parentDeep: point.deep, parent: `${point.x}:${point.y}`})
     }
@@ -338,15 +336,20 @@ function calculate(n = 1) {
     newy = point.y
     if (maze[newx] !== undefined && maze[newx][newy] !== undefined && maze[newx][newy] !== 1 && ! visitedPoints.hasOwnProperty(`${newx}:${newy}`)) {
 
-        wg = 1 + point.weight + maze[newx][newy];
-        if (enemyArray.includes(`${newx}:${newy}`)) {
-          wg += 10
-        }
+        // wg = 1 + point.weight + maze[newx][newy];
+        // if (enemyArray.includes(`${newx}:${newy}`)) {
+        //   wg += 10
+        // }
+        wg = heuristic({x: newx, y: newy}, {x: target[0], y: target[1]})
         if (isNaN(wg)) debugger
         result.push({x: newx, y: newy, weight: wg, parentDeep: point.deep, parent: `${point.x}:${point.y}`})
 
     }
     return result;
+  }
+
+  function heuristic(a, b) {
+    return Math.abs(a.x - b.x) + Math.abs(a.y - b.y)
   }
   // maze[visited.x][visited.y]
   // function expansion

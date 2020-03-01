@@ -1,0 +1,525 @@
+<html>
+<head>
+  <script>
+  class Pirate {
+    constructor(coordinates, points) {
+        this.x = coordinates.x;
+        this.y = coordinates.y;
+        this.points = points;
+        this.lastPointIndex = 0;
+        this.nextPoint = this.getNextPoint();
+    }
+
+    get coords() {
+        return {
+            x: this.x,
+            y: this.y,
+        };
+    }
+
+    nextMove(shipCoordinates) {
+        if (this.checkShipNearby(shipCoordinates)) {
+            this.x = shipCoordinates.x;
+            this.y = shipCoordinates.y;
+            throw new Error('Пираты захватили ваш корабль');
+        }
+
+        if (this.x !== this.nextPoint.x) {
+            this.x += this.x < this.nextPoint.x ? 1 : -1;
+            return;
+        }
+        if (this.y !== this.nextPoint.y) {
+            this.y += this.y < this.nextPoint.y ? 1 : -1;
+            return;
+        }
+        this.lastPointIndex = this.getNextPointIndex();
+        this.nextPoint = this.getNextPoint();
+        this.nextMove(shipCoordinates);
+    }
+
+    checkShipNearby(shipCoordinates) {
+        const neighbours = this.getNeighbourCells();
+        return neighbours.some(c => c.x === shipCoordinates.x && c.y === shipCoordinates.y);
+    }
+
+    getNextPointIndex() {
+        return (this.lastPointIndex + 1) % this.points.length;
+    }
+
+    getNextPoint() {
+        return this.points[this.getNextPointIndex()];
+    }
+
+    getNeighbourCells() {
+        return [
+            { x: this.x, y: this.y },
+            { x: this.x + 1, y: this.y },
+            { x: this.x - 1, y: this.y },
+            { x: this.x, y: this.y + 1 },
+            { x: this.x, y: this.y - 1 },
+        ];
+    }
+}
+  </script>
+<style>
+.row {
+  display: block;
+  clear: both;
+}
+
+.row .cell {
+  float: left;
+  border: 1px solid #e3e3e3;
+  width: 20px;
+  height: 20px;
+  position: relative;
+  text-align: center;
+}
+
+.cell.wall {
+  background-color: #fcc;
+}
+
+.cell.wood {
+  background-color: #0d7400;
+}
+
+.cell.player::after {
+  content: 'P';
+  text-align: center;
+  color: #ff0000;
+}
+
+.cell.pirate::after {
+  content: 'X';
+  text-align: center;
+  color: #ff0000;
+}
+
+.cell.enemy {
+  background-color: #f00;
+}
+
+.cell.target {
+  background-color: #ff0;
+}
+.row .cell .weight {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 14px;
+    height: 14px;
+    color: #ffffff;
+    z-index: 10;
+    background-color: #573ecf87;
+}
+.row .cell .findPoint {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: -5px;
+  margin-top: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 10px;
+  background: #00ff00;
+}
+
+.row .cell .trackPoint {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: -3px;
+  margin-top: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 10px;
+  background: #0000ff;
+}
+
+.row .cell[data-path]:after {
+    content:"";
+    width: 5px;
+    height: 5px;
+    background-color: #ff0000;
+    position: absolute;
+    left: calc(50% - 2.5px);
+    top: calc(50% - 2.5px);
+}
+.row .cell[data-deep] {
+  background-color: rgba(0, 0, 0);
+}
+.row .cell[data-deep="1"] {
+  background-color: rgba(255, 255, 255);
+}
+
+.row .cell[data-deep="2"] {
+  background-color: rgba(240, 240, 240);
+}
+
+.row .cell[data-deep="3"] {
+  background-color: rgba(225, 225, 225);
+}
+
+.row .cell[data-deep="4"] {
+  background-color: rgba(210, 210, 210);
+}
+
+.row .cell[data-deep="5"] {
+  background-color: rgba(195, 195, 195);
+}
+
+.row .cell[data-deep="6"] {
+  background-color: rgba(180, 180, 180);
+}
+
+.row .cell[data-deep="7"] {
+  background-color: rgba(165, 165, 165);
+}
+
+.row .cell[data-deep="8"] {
+  background-color: rgba(150, 150, 150);
+}
+
+.row .cell[data-deep="9"] {
+  background-color: rgba(135, 135, 135);
+}
+
+.row .cell[data-deep="10"] {
+  background-color: rgba(120, 120, 120);
+}
+
+.row .cell[data-deep="11"] {
+  background-color: rgba(105, 105, 105);
+}
+
+.row .cell[data-deep="12"] {
+  background-color: rgba(90, 90, 90);
+}
+
+.row .cell[data-deep="13"] {
+  background-color: rgba(75, 75, 75);
+}
+
+.row .cell[data-deep="14"] {
+  background-color: rgba(60, 60, 60);
+}
+
+.row .cell[data-deep="15"] {
+  background-color: rgba(45, 45, 45);
+}
+
+.row .cell[data-deep="15"] {
+  background-color: rgba(30, 30, 30);
+}
+
+.row .cell[data-deep="16"] {
+  background-color: rgba(15, 15, 15);
+}
+
+.row .cell[data-deep="17"] {
+  background-color: rgba(0, 0, 0);
+}
+</style>
+</head>
+<body>
+<div id="mainGrid">
+
+</div>
+
+<script type="text/javascript">
+  function drawPoint({x, y} = {}) {
+    if (x !== undefined && y !== undefined) {
+      const weightElement = document.createElement('div')
+      const ceilElement = document.querySelector(`.cell${x}_${y}`)
+      weightElement.classList.add('findPoint')
+      ceilElement.appendChild(weightElement)
+    }
+  }
+
+  function drawTrack(track) {
+    for (const {x, y} of track) {
+      if (x !== undefined && y !== undefined) {
+        const weightElement = document.createElement('div')
+        const ceilElement = document.querySelector(`.cell${x}_${y}`)
+        weightElement.classList.add('trackPoint')
+        ceilElement.appendChild(weightElement)
+      }
+    }
+  }
+
+  function clearPoints() {
+    document.querySelectorAll('.findPoint').forEach((element)=>element.remove())
+    document.querySelectorAll('.trackPoint').forEach((element)=>element.remove())
+  }
+
+  /**
+   *    -1
+   * -1     1
+   *     1
+   */
+  function calculateMoveDirection (first, second) {
+    return { x: second.x - first.x, y: second.y - first.y }
+  }
+
+  const maze = [
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,1,1],
+    [0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,1,1],
+    [0,0,0,0,0,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0],
+    [0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0],
+    [1,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
+    [1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,1],
+    [0,0,0,0,0,0,0,0,0,1,1,1,3,0,0,0,0,0,1,1],
+    [0,0,0,1,1,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+    [0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,1,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,1],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1],
+    [0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1],
+    [1,0,0,0,0,0,0,0,0,1,1,1,1,2,0,0,0,0,0,1],
+    [1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+    [1,0,0,0,0,0,0,0,0,0,0,2,1,1,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  ];
+  const player = {x: 12, y: 8}
+  const ports = [
+      { portId: 0, x: 12, y: 8 },
+      { portId: 1, x: 17, y: 1 },
+      { portId: 2, x: 6, y: 2 },
+      { portId: 3, x: 3, y: 11 },
+      { portId: 4, x: 18, y: 12 },
+      { portId: 5, x: 13, y: 15 },
+      { portId: 6, x: 11, y: 17 },
+  ]
+  const pirates = [
+    new Pirate({x: 6, y: 11}, [{x: 6, y: 11}, {x: 16, y: 11}, {x: 16, y: 12}, {x: 6, y: 12}]),
+    new Pirate({x: 2, y: 6}, [{x: 2, y: 6}, {x: 9, y: 6}]),
+  ]
+  const piratesPrev = []
+  let globalWeights = []
+
+  redrawMaze();
+  redraw();
+
+  class PathFinder {
+    constructor(mapMatrix) {
+      this.mapSize = { width: mapMatrix[0].length, height: mapMatrix.length }
+      this.mapObjects = mapMatrix.reduce((mapObjects, line, y) => {
+        line.forEach((cell, x) => {
+          mapObjects.push({
+            x, y,
+            type: cell,
+            weight: 1,
+            weightAdd: 0,
+            parent: null,
+          })
+        })
+        return mapObjects
+      }, []);
+      console.log('this.mapObject', this.mapObjects)
+    }
+    resetMapObject() {
+      this.mapObjects = this.mapObjects.map(point => {
+        point.weight = 1
+        point.weightAdd = 0
+        point.parent = null
+        return point;
+      })
+    }
+    find (start, end, weights, debug) {
+      this.resetMapObject()
+      const queue = []
+      const visited = []
+      let point = this.mapObjects[this.mapIndex(start)]
+      clearPoints()
+      let count = 0;
+      do {
+        visited.push(point)
+        if (point.x === end.x && point.y === end.y) {
+          break;
+        }
+        queue.push(...this.getNeighbours(point, end, weights, queue, visited, debug))
+        queue.sort((a, b) => (b.weight + b.weightAdd) - (a.weight + a.weightAdd))
+        point = queue.pop()
+
+        drawPoint(point)
+        // if (debug) {
+        //   debugger;
+        // }
+        count++;
+        if (count > 1000) {
+          console.log(visited)
+          debugger;
+          break;
+        }
+      } while (point !== undefined);
+
+      const track = this.getTrack(end);
+      drawTrack(track);
+      return track;
+    }
+    getTrack(end) {
+      let parent = null;
+      let point = this.mapObjects[this.mapIndex(end)];
+      let count = 0;
+      const track = [point];
+      do {
+        parent = point.parent;
+        point = parent;
+        if (parent) {
+          track.push(parent);
+        }
+      } while(parent);
+      return track;
+    }
+    getNeighbours(point, end, weights, queue, visited, debug) {
+      const neighbors = {
+        top:    { x: point.x, y: point.y - 1 },
+        bottom: { x: point.x, y: point.y + 1 },
+        left:   { x: point.x - 1, y: point.y },
+        right:  { x: point.x + 1, y: point.y }
+      };
+      const result = Object.values(neighbors).reduce((resultSet, neighbor) => {
+        const mapPoint = this.mapObjects[this.mapIndex(neighbor)]
+        // debugger;
+        if (
+          mapPoint &&
+          ! queue.some(isExist) &&
+          ! visited.some(isExist) &&
+          mapPoint.type !== 1 &&
+          neighbor.x < this.mapSize.width &&
+          neighbor.y < this.mapSize.height
+        ) {
+          mapPoint.parent = point;
+          mapPoint.weight += point.weight;
+          mapPoint.weight += this.distance(point, end)
+          const weight = weights.find(weight => {
+            return weight.x === neighbor.x && weight.y === neighbor.y
+          })
+          if (weight !== undefined) {
+            mapPoint.weightAdd = weight.value
+          }
+          // if (debug && point.x === 6 && point.y === 11) {
+          //   debugger;
+          // }
+          resultSet.push(mapPoint);
+        }
+        function isExist(ignorePoint) {
+          return ignorePoint.x === neighbor.x && ignorePoint.y === neighbor.y
+        }
+        return resultSet;
+      }, []);
+      return result;
+    }
+    distance(a, b) {
+      return Math.abs(a.x - b.x) + Math.abs(a.y - b.y)
+    }
+    mapIndex({ x, y } = {}) {
+      return x + (this.mapSize.height * y)
+    }
+  }
+
+  const pathfinder = new PathFinder(maze)
+  let timer = null
+  let counter = 0;
+  let debug = false;
+  timer = setInterval(() => {
+    try {
+      debug = false;
+      counter++;
+      movePirates();
+      calculateWeights();
+      redraw();
+      console.time('pathFinder')
+      if (counter === 22) {
+        debug = true;
+      }
+      pathfinder.find(player, ports[3], globalWeights, debug);
+      console.timeEnd('pathFinder')
+      // clearInterval(timer)
+      // debugger;
+    } catch (e) {
+      console.error(e)
+      clearInterval(timer)
+    }
+  }, 500)
+
+
+  function calculateWeights() {
+    // const defaultWeight = 10
+    // globalWeights = globalWeights.map(weight => {
+    //   weight.value -= defaultWeight;
+    //   if (weight.value < 0) {
+    //     weight.value = 0;
+    //   }
+    //   return weight
+    // })
+    // for (const pirate of pirates) {
+    //   const direction = this.calculateMoveDirection(this.piratesPrev[index], pirat)
+    //   const weight = globalWeights.find(item => {
+    //     return item.x === pirate.x && item.y === pirate.y
+    //   })
+    //   if (weight === undefined) {
+    //     globalWeights.push({
+    //       x: pirate.x,
+    //       y: pirate.y,
+    //       value: defaultWeight
+    //     })
+    //   } else {
+    //     weight.value += defaultWeight
+    //   }
+    // }
+    // piratesPrev = pirates
+  }
+  function movePirates() {
+      for (const pirate of pirates) {
+          pirate.nextMove(player);
+      }
+  }
+  function redrawMaze() {
+    mainGrid.innerHTML = ""
+    ceilElements = []
+    for (let i = 0; i < maze.length; i++) {
+      const row = document.createElement('div')
+      row.classList.add('row')
+      const ceilsRow = []
+      for (let j = 0; j < maze[i].length; j++) {
+        const cell = document.createElement('div')
+        cell.classList.add('cell')
+        cell.classList.add(`cell${j}_${i}`)
+        if (maze[i][j] === 1) {
+          cell.classList.add('wall')
+        }
+        if (maze[i][j] > 1) {
+          cell.classList.add('wood')
+        }
+        ceilsRow.push(cell)
+        row.appendChild(cell)
+      }
+      ceilElements.push(ceilsRow)
+      mainGrid.appendChild(row)
+    }
+  }
+  function redraw() {
+    document.querySelectorAll('.player').forEach((element)=>element.classList.remove('player'))
+    document.querySelectorAll('.pirate').forEach((element)=>element.classList.remove('pirate'))
+    document.querySelectorAll('.weight').forEach((element)=>element.remove())
+    ceilElements[player.y][player.x].classList.add('player')
+    for (const pirate of pirates) {
+      ceilElements[pirate.y][pirate.x].classList.add('pirate')
+    }
+    for (const weight of globalWeights) {
+      const weightElement = document.createElement('div')
+      weightElement.classList.add('weight')
+      weightElement.innerText = weight.value
+      ceilElements[weight.y][weight.x].appendChild(weightElement)
+    }
+  }
+
+
+</script>
+</body>
+</html>
