@@ -24,17 +24,19 @@
             throw new Error('Пираты захватили ваш корабль');
         }
 
-        if (this.x !== this.nextPoint.x) {
-            this.x += this.x < this.nextPoint.x ? 1 : -1;
-            return;
+        if (this.nextPoint) {
+          if (this.x !== this.nextPoint.x) {
+              this.x += this.x < this.nextPoint.x ? 1 : -1;
+              return;
+          }
+          if (this.y !== this.nextPoint.y) {
+              this.y += this.y < this.nextPoint.y ? 1 : -1;
+              return;
+          }
+          this.lastPointIndex = this.getNextPointIndex();
+          this.nextPoint = this.getNextPoint();
+          this.nextMove(shipCoordinates);
         }
-        if (this.y !== this.nextPoint.y) {
-            this.y += this.y < this.nextPoint.y ? 1 : -1;
-            return;
-        }
-        this.lastPointIndex = this.getNextPointIndex();
-        this.nextPoint = this.getNextPoint();
-        this.nextMove(shipCoordinates);
     }
 
     checkShipNearby(shipCoordinates) {
@@ -284,7 +286,7 @@
     [0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
   ];
-  const player = {x: 12, y: 8}
+  const player = {x: 14, y: 16}
   const ports = [
       { portId: 0, x: 12, y: 8 },
       { portId: 1, x: 17, y: 1 },
@@ -294,11 +296,38 @@
       { portId: 5, x: 13, y: 15 },
       { portId: 6, x: 11, y: 17 },
   ]
+  const arraound = [
+    // {x: -1, y: -1},
+    // {x: 0, y: -1},
+    // {x: 1, y: -1},
+    // {x: -1, y: 0},
+    {x: 0, y: 0},
+    // {x: 1, y: 0},
+    // {x: -1, y: 1},
+    // {x: 0, y: 1},
+    // {x: 1, y: 1},
+  ]
+  const list = [4, 6]
+  let portsArround = []
+  for (const port of ports) {
+    for (const cell of arraound) {
+      portsArround.push({ x: port.x + cell.x, y: port.y + cell.y })
+    }
+  }
   const pirates = [
     new Pirate({x: 6, y: 11}, [{x: 6, y: 11}, {x: 16, y: 11}, {x: 16, y: 12}, {x: 6, y: 12}]),
+    // new Pirate({x: 15, y: 11}, []),
     new Pirate({x: 2, y: 6}, [{x: 2, y: 6}, {x: 9, y: 6}]),
+    new Pirate({x: 17, y: 18}, [{x: 17, y: 18}, {x: 17, y: 15}]),
+    // new Pirate({x: 17, y: 15}, []),
   ]
-  const piratesPrev = []
+  let piratesPrev = [
+    {x: 6, y: 11},
+    // {x: 14, y: 11},
+    {x: 2, y: 6},
+    {x: 17, y: 18},
+    // {x: 17, y: 14},
+  ]
   let globalWeights = []
 
   redrawMaze();
@@ -313,7 +342,6 @@
             x, y,
             type: cell,
             weight: 1,
-            weightAdd: 0,
             parent: null,
           })
         })
@@ -324,41 +352,40 @@
     resetMapObject() {
       this.mapObjects = this.mapObjects.map(point => {
         point.weight = 1
-        point.weightAdd = 0
         point.parent = null
         return point;
       })
     }
-    find (start, end, weights, debug) {
+    find (start, end, ignore, debug) {
       this.resetMapObject()
+      // clearPoints()
       const queue = []
       const visited = []
       let point = this.mapObjects[this.mapIndex(start)]
-      clearPoints()
       let count = 0;
       do {
         visited.push(point)
         if (point.x === end.x && point.y === end.y) {
           break;
         }
-        queue.push(...this.getNeighbours(point, end, weights, queue, visited, debug))
-        queue.sort((a, b) => (b.weight + b.weightAdd) - (a.weight + a.weightAdd))
+        queue.push(...this.getNeighbours(point, end, ignore, queue, visited, debug))
+        queue.sort((a, b) => b.weight - a.weight)
         point = queue.pop()
 
-        drawPoint(point)
+        // drawPoint(point)
         // if (debug) {
-        //   debugger;
+          // debugger;
         // }
-        count++;
-        if (count > 1000) {
-          console.log(visited)
-          debugger;
-          break;
-        }
+        // count++;
+        // if (count > 1000) {
+        //   console.log(visited)
+        //   debugger;
+        //   break;
+        // }
       } while (point !== undefined);
 
       const track = this.getTrack(end);
-      drawTrack(track);
+      // drawTrack(track);
       return track;
     }
     getTrack(end) {
@@ -373,9 +400,9 @@
           track.push(parent);
         }
       } while(parent);
-      return track;
+      return track.slice(0).reverse();
     }
-    getNeighbours(point, end, weights, queue, visited, debug) {
+    getNeighbours(point, end, ignore, queue, visited) {
       const neighbors = {
         top:    { x: point.x, y: point.y - 1 },
         bottom: { x: point.x, y: point.y + 1 },
@@ -389,22 +416,16 @@
           mapPoint &&
           ! queue.some(isExist) &&
           ! visited.some(isExist) &&
+          ! ignore.some(isExist) &&
           mapPoint.type !== 1 &&
           neighbor.x < this.mapSize.width &&
-          neighbor.y < this.mapSize.height
+          neighbor.y < this.mapSize.height &&
+          neighbor.x >= 0 &&
+          neighbor.y >= 0
         ) {
           mapPoint.parent = point;
           mapPoint.weight += point.weight;
           mapPoint.weight += this.distance(point, end)
-          const weight = weights.find(weight => {
-            return weight.x === neighbor.x && weight.y === neighbor.y
-          })
-          if (weight !== undefined) {
-            mapPoint.weightAdd = weight.value
-          }
-          // if (debug && point.x === 6 && point.y === 11) {
-          //   debugger;
-          // }
           resultSet.push(mapPoint);
         }
         function isExist(ignorePoint) {
@@ -418,7 +439,7 @@
       return Math.abs(a.x - b.x) + Math.abs(a.y - b.y)
     }
     mapIndex({ x, y } = {}) {
-      return x + (this.mapSize.height * y)
+      return x + (this.mapSize.width * y)
     }
   }
 
@@ -426,6 +447,8 @@
   let timer = null
   let counter = 0;
   let debug = false;
+  let target = ports[list.shift()] || ports[Math.floor(Math.random() * ports.length)]
+  let trigger = 0
   timer = setInterval(() => {
     try {
       debug = false;
@@ -433,23 +456,53 @@
       movePirates();
       calculateWeights();
       redraw();
-      console.time('pathFinder')
       if (counter === 22) {
         debug = true;
       }
-      pathfinder.find(player, ports[3], globalWeights, debug);
+      console.time('pathFinder')
+      let track = pathfinder.find(player, target, globalWeights, debug);
       console.timeEnd('pathFinder')
-      // clearInterval(timer)
       // debugger;
+      // if (trigger) {
+      //   trigger = 0;
+      //   debugger;
+      //   track = pathfinder.find(player, ports[4], globalWeights, debug);
+      //   debugger;
+      // }
+      let move
+      let done = false
+      do {
+        move = track.shift()
+        if (! done && move && (move.x !== player.x || move.y !== player.y)) {
+          if (Math.abs(player.x - move.x) > 1 || Math.abs(player.y - move.y) > 1) {
+            // debugger;
+          } else {
+            player.x = move.x
+            player.y = move.y
+          }
+          redraw();
+          done = true
+        }
+      } while (move && !done)
+
+      if (! track.length) {
+        target = ports[list.shift()] || ports[Math.floor(Math.random() * ports.length)]
+        trigger = 1;
+      }
+
+
+      // clearInterval(timer)
+
     } catch (e) {
       console.error(e)
+      redraw();
       clearInterval(timer)
     }
-  }, 500)
+  }, 100)
 
 
   function calculateWeights() {
-    // const defaultWeight = 10
+    const defaultWeight = 1
     // globalWeights = globalWeights.map(weight => {
     //   weight.value -= defaultWeight;
     //   if (weight.value < 0) {
@@ -457,22 +510,71 @@
     //   }
     //   return weight
     // })
-    // for (const pirate of pirates) {
-    //   const direction = this.calculateMoveDirection(this.piratesPrev[index], pirat)
-    //   const weight = globalWeights.find(item => {
-    //     return item.x === pirate.x && item.y === pirate.y
-    //   })
-    //   if (weight === undefined) {
-    //     globalWeights.push({
-    //       x: pirate.x,
-    //       y: pirate.y,
-    //       value: defaultWeight
-    //     })
-    //   } else {
-    //     weight.value += defaultWeight
-    //   }
-    // }
-    // piratesPrev = pirates
+    globalWeights = []
+
+
+      const pirate = pirates[index]
+      const direction = calculateMoveDirection(piratesPrev[index], pirate)
+      setWeight(pirate, defaultWeight)
+
+      if (direction.x > 0 || direction.y) {
+        setWeight({ x: pirate.x + 1, y: pirate.y }, defaultWeight)
+        if (direction.y < 0 || direction.x) {
+          setWeight({ x: pirate.x + 1, y: pirate.y - 1 }, defaultWeight)
+        }
+        if (direction.y > 0 || direction.x) {
+          setWeight({ x: pirate.x + 1, y: pirate.y + 1 }, defaultWeight)
+        }
+      }
+      // if (direction.x != 0) {
+      //   setWeight({ x: pirate.x + (direction.x * 2), y: pirate.y }, defaultWeight)
+      // }
+      if (direction.x < 0 || direction.y) {
+        setWeight({ x: pirate.x - 1, y: pirate.y }, defaultWeight)
+        if (direction.y < 0 || direction.x) {
+          setWeight({ x: pirate.x - 1, y: pirate.y - 1 }, defaultWeight)
+        }
+        if (direction.y > 0 || direction.x) {
+          setWeight({ x: pirate.x - 1, y: pirate.y + 1 }, defaultWeight)
+        }
+      }
+      if (direction.y < 0 || direction.x) {
+        setWeight({ x: pirate.x, y: pirate.y - 1 }, defaultWeight)
+      }
+      if (direction.y > 0 || direction.x) {
+        setWeight({ x: pirate.x, y: pirate.y + 1 }, defaultWeight)
+      }
+
+
+      // setWeight({ x: pirate.x - (direction.x), y: pirate.y - (direction.y) }, -(defaultWeight * 5))
+      // if (direction.x) {
+      //   removeWeight({ x: pirate.x - (direction.x), y: pirate.y - (direction.y - 1) })
+      //   removeWeight({ x: pirate.x - (direction.x), y: pirate.y - (direction.y + 1) })
+      // }
+      // if (direction.y) {
+      //   removeWeight({ x: pirate.x - (direction.x - 1), y: pirate.y - (direction.y) })
+      //   removeWeight({ x: pirate.x - (direction.x + 1), y: pirate.y - (direction.y) })
+      // }
+
+
+      piratesPrev[index] = {x: pirate.x, y: pirate.y}
+    }
+    function setWeight(point, weight) {
+      const weightItem = globalWeights.find(item => {
+        return item.x === point.x && item.y === point.y
+      })
+      if (! portsArround.some(ignorePoint => ignorePoint.x === point.x && ignorePoint.y === point.y)) {
+        if (weightItem === undefined) {
+          globalWeights.push({
+            x: point.x,
+            y: point.y,
+            value: weight
+          })
+        } else {
+          weightItem.value += weight
+        }
+      }
+    }
   }
   function movePirates() {
       for (const pirate of pirates) {
@@ -512,10 +614,12 @@
       ceilElements[pirate.y][pirate.x].classList.add('pirate')
     }
     for (const weight of globalWeights) {
-      const weightElement = document.createElement('div')
-      weightElement.classList.add('weight')
-      weightElement.innerText = weight.value
-      ceilElements[weight.y][weight.x].appendChild(weightElement)
+      if (weight.value !== 0) {
+        const weightElement = document.createElement('div')
+        weightElement.classList.add('weight')
+        weightElement.innerText = weight.value
+        ceilElements[weight.y][weight.x].appendChild(weightElement)
+      }
     }
   }
 
