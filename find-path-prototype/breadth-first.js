@@ -22,11 +22,11 @@
 
   let cellElementsGrid = [];
 
-  let n = 0;
-  calculate((n += 1));
-  setInterval(() => {
-    calculate((n += 1));
-  }, 1000);
+  calculate(1);
+  document.getElementById('range').addEventListener('input', (e) => {
+    calculate(e.target.value);
+  })
+
 
   function redrawMaze() {
     mainGrid.innerHTML = '';
@@ -98,6 +98,20 @@
     for (const point of getPath(visited)) {
       cellElementsGrid[point.x][point.y].dataset.path = 1;
     }
+    // drawPath(Object.assign({}, visited));
+
+    // function drawPath(vis) {
+    //   let key = Object.keys(vis)[0];
+    //   if (key !== undefined) {
+    //     setTimeout(() => {
+    //       const point = key.split(':')
+    //       ceilElements[point[0]][point[1]].dataset.deep = vis[key].deep
+    //       ceilElements[point[0]][point[1]].dataset.weight = vis[key].weight
+    //       delete vis[key]
+    //       drawPath(vis)
+    //     }, 50)
+    //   }
+    // }
 
     function getPath(visitedPoints) {
       let key = Object.keys(visitedPoints).reverse()[0];
@@ -139,14 +153,16 @@
   }
 
   function moveEnemy(step) {
-    if (step % 5 === 0 || step % 10 === 0) return;
-    if (step % 5 < 5 && step % 10 < 5) {
-      enemy[0] -= 1;
-      enemy[1] -= 1;
-    } else if (step % 10 >= 5) {
-      enemy[0] += 1;
-      enemy[1] += 1;
-    }
+    // enemy[0] = (9 - step % 5) + (step % 5);
+    // enemy[1] = (9 - step % 5) + (step % 5);
+    // if (step % 5 === 0 || step % 10 === 0) return;
+    // if (step % 5 < 5 && step % 10 < 5) {
+    //   enemy[0] -= 1;
+    //   enemy[1] -= 1;
+    // } else if (step % 10 >= 5) {
+    //   enemy[0] += 1;
+    //   enemy[1] += 1;
+    // }
   }
 
   function createDiv(...names) {
